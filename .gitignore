@@ -6,3 +6,4 @@ sourcemap.json
 package-lock.json
 package.json
 .darklua.json
+src-build
