@@ -60,7 +60,14 @@ local function SafeUnit(v3: Vector3): Vector3
 	return v3.Unit
 end
 
-local function map(n: number, start: number, stop: number, newStart: number, newStop: number, withinBounds: bool): number
+local function map(
+	n: number,
+	start: number,
+	stop: number,
+	newStart: number,
+	newStop: number,
+	withinBounds: bool
+): number
 	local value = ((n - start) / (stop - start)) * (newStop - newStart) + newStart
 
 	--// Returns basic value
@@ -72,7 +79,8 @@ local function map(n: number, start: number, stop: number, newStart: number, new
 	if newStart < newStop then
 		return (value < newStop and value or newStop) > newStart and (value < newStop and value or newStop) or newStart
 	else
-		return (value < newStart and value or newStart) > newStop and (value < newStart and value or newStart) or newStop
+		return (value < newStart and value or newStart) > newStop and (value < newStart and value or newStart)
+			or newStop
 	end
 end
 
@@ -201,6 +209,14 @@ function Class.new(RootBone: Bone, RootPart: BasePart): IBoneTree
 		end
 
 		self.InWorkspace = RootPart:IsDescendantOf(workspace)
+	end)
+
+	self.DestroyBoneConnection = RootBone.AncestryChanged:ConnectParallel(function()
+		if not RootBone:IsDescendantOf(game) then
+			self.Destroyed = true
+		end
+
+		self.InWorkspace = RootBone:IsDescendantOf(workspace)
 	end)
 
 	self.AttributeConnection = RootPart.AttributeChanged:ConnectParallel(function(Attribute)
@@ -448,7 +464,14 @@ function Class:DrawOverlay(Overlay: ImOverlay)
 	if Config.DEBUG_OVERLAY_TREE_INFO or Config.DEBUG_OVERLAY_TREE_OBJECTS then
 		Overlay.Text(`Root Part: {self.RootPart.Name}`)
 		Overlay.Text(`Root Bone: {self.Root.Name}`)
-		Overlay.Text(`Root Part Size: {string.format("%.3f, %.3f, %.3f", self.RootPart.Size.X, self.RootPart.Size.Y, self.RootPart.Size.Z)}`)
+		Overlay.Text(
+			`Root Part Size: {string.format(
+				"%.3f, %.3f, %.3f",
+				self.RootPart.Size.X,
+				self.RootPart.Size.Y,
+				self.RootPart.Size.Z
+			)}`
+		)
 	end
 
 	if Config.DEBUG_OVERLAY_TREE_INFO or Config.DEBUG_OVERLAY_TREE_NUMERICS then
@@ -486,6 +509,7 @@ function Class:Destroy()
 	task.synchronize()
 	self.DestroyConnection:Disconnect()
 	self.AttributeConnection:Disconnect()
+	self.DestroyBoneConnection:Disconnect()
 
 	for _, Bone in self.Bones do
 		Bone:Destroy()
